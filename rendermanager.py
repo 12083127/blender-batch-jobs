@@ -1,6 +1,5 @@
 
-
-from appmanager import AppData
+from appmanager import AppList, AppData
 from dataclasses import dataclass
 from enum import Enum, unique
 from typing import List
@@ -18,9 +17,13 @@ class JobStatus(Enum):
 @dataclass
 class RenderJob:
     app: AppData
-    blend_file: str
+    blend_filepath: str
     status: JobStatus = JobStatus.QUEUED
     render_settings = None
+
+    def generate_cmd_str(self) -> list[str]:
+        _cmd_str = [self.app.path, "-b"]
+        return _cmd_str
 
 
 class RenderManager:
@@ -28,12 +31,20 @@ class RenderManager:
 
     @classmethod
     def add_render_job(self, filepath: str, rendersettings=None) -> bool:
+        if not AppList.get_active_installation():
+            return False
+
         return True
 
     @classmethod
     def remove_render_job(self, index: int) -> bool:
-        return True
+        try:
+            self.__job_list.pop(abs(index))
+            return True
+        except:
+            print("Error removing render job...")
+            return False
 
     @classmethod
-    def get_job_list(self):
+    def get_job_list(self) -> List[RenderJob]:
         return self.__job_list

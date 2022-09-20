@@ -3,7 +3,7 @@
 Module Docstring
 """
 
-from appmanager import AppManager
+from appmanager import AppList
 
 __author__ = "Robert Lehmann"
 __version__ = "0.1.0"
@@ -12,16 +12,14 @@ __license__ = ""
 
 def main():
 
-    AppManager.add_installation("/opt/blender/3.0.1/blender")
-    AppManager.add_installation("/opt/blender/3.2.2/blender")
-    AppManager.add_installation("/opt/blender/3.0.1/blender")
+    AppList.add_installation("/opt/blender/3.0.1/blender")
+    AppList.add_installation("/opt/blender/3.2.2/blender")
+    AppList.add_installation("/opt/blender/3.2.2/blender")
 
-    if AppManager.get_app_list():
-        applist = AppManager.get_app_list()
-        print(AppManager.get_active_installation())
-        AppManager.set_active_installation(applist[1])
-        print(AppManager.get_active_installation())
+    print("\n")
 
+    if AppList.get():
+        AppList.print()
     else:
         print("Empty")
 
