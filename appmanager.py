@@ -1,4 +1,10 @@
 
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from rendermanager import BlendFile
+
 import subprocess
 
 from dataclasses import dataclass, field
@@ -14,29 +20,51 @@ class AppData:
     def __repr__(self) -> str:
         return "AppData(name='{}', version='{}', path='{}')".format(self.name, self.version, self.path)
 
-    def __str__(self) -> str:
-        _version_str = ""
-        for element in self.version:
-            _version_str += str(element) + "."
-        return "{} {}".format(self.name, _version_str[:-1])
-
     def __eq__(self, other) -> bool:
         if isinstance(other, AppData):
             return self.path == other.path and self.version == other.version
+        elif isinstance(other, BlendFile):
+            return self.version == other.version
+        else:
+            raise TypeError
+
+    def __ne__(self, other) -> bool:
+        if isinstance(other, AppData):
+            return self.path != other.path or self.version != other.version
+        elif isinstance(other, BlendFile):
+            return self.version != other.version
+        else:
+            raise TypeError
+
+    def __ge__(self, other) -> bool:
+        if isinstance(other, AppData | BlendFile):
+            return self.version >= other.version
         else:
             raise TypeError
 
     def __gt__(self, other) -> bool:
-        if isinstance(other, AppData):
+        if isinstance(other, AppData | BlendFile):
             return self.version > other.version
         else:
             raise TypeError
 
     def __lt__(self, other) -> bool:
-        if isinstance(other, AppData):
+        if isinstance(other, AppData | BlendFile):
+            return self.version <= other.version
+        else:
+            raise TypeError
+
+    def __lt__(self, other) -> bool:
+        if isinstance(other, AppData | BlendFile):
             return self.version < other.version
         else:
             raise TypeError
+
+    def __str__(self) -> str:
+        _version_str = ""
+        for element in self.version:
+            _version_str += str(element) + "."
+        return (self.name + " " + _version_str[:-1])
 
 
 class AppList:
