@@ -56,7 +56,7 @@ class BlendFile:
     endframe: int
 
     def __repr__(self) -> str:
-        return "BlendFile(path='{}', version='{}', startframe='{}', endframe='{}')".format(self.path, self.version, self.startframe, self.endframe)
+        return f"BlendFile(path='{self.path}', version='{self.version}', startframe='{self.startframe}', endframe='{self.endframe}')"
 
     def __eq__(self, other) -> bool:
         if isinstance(other, AppData | BlendFile):
@@ -98,7 +98,7 @@ class BlendFile:
         _version_str = ""
         for element in self.version:
             _version_str += str(element) + "."
-        return "{} - ver.{}".format(self.path, _version_str[:-1])
+        return f"{self.path} - ver.{_version_str[:-1]}"
 
 
 @dataclass
@@ -113,7 +113,7 @@ class RenderSettings:
     threads: int = 0
 
     def __repr__(self) -> str:
-        return "RenderSettings(frames='{}', startframe='{}', endframe='{}', framejump='{}', output='{}', engine='{}', format='{}', threads='{}')".format(self.frames, self.startframe, self.endframe, self.framejump, self.output, self.engine, self.format, self.threads)
+        return f"RenderSettings(frames='{self.frames}', startframe='{self.startframe}', endframe='{self.endframe}', framejump='{self.framejump}', output='{self.output}', engine='{self.engine}', format='{self.format}', threads='{self.threads}')"
 
     def __str__(self) -> str:
         _str = ""
@@ -153,11 +153,12 @@ class RenderJob:
     blendfile: BlendFile
     render_settings: RenderSettings
     status: JobStatus = JobStatus.QUEUED
+    total_render_time: float = 0
     progress: float = field(init=False, default_factory=float)
     __frames_to_render: int = field(init=False, default_factory=int)
 
     def __repr__(self) -> str:
-        return "RenderJob(app='{}', blendfile='{}', render_settings='{}', progress='{}', status='{}')".format(self.app, self.blendfile, self.render_settings, self.progress, self.status)
+        return f"RenderJob(app='{self.app}', blendfile='{self.blendfile}', render_settings='{self.render_settings}', progress='{self.progress}', status='{self.status}')"
 
     def __order_frame_range(self, input: str, separator: str) -> str:
         _range = input.split(separator)
@@ -179,7 +180,7 @@ class RenderJob:
             self.progress = current_frame / self.__frames_to_render
 
     def print_progress(self) -> str:
-        return "{:3.0f}%".format(self.progress * 100)
+        return f"{self.progress * 100:3.0f}%"
 
     def generate_cmd_str(self) -> List[str]:
         _cmd_str = [self.app.path, "-b", self.blendfile.path]
@@ -275,6 +276,9 @@ class JobList:
 
     @classmethod
     def add_render_job(self, filepath: str, render_settings: RenderSettings = RenderSettings()) -> bool:
+        # TODO:
+        # -check for changed app location
+        # -exception checking
         _blender_path = AppList.get_active_installation()
         if not _blender_path:
             print("No active installation. Please add at least one valid Blender install")
@@ -283,30 +287,33 @@ class JobList:
         try:
             with open(filepath, "rb") as file:
                 _identifer = file.read(7).decode()
-
                 if _identifer != "BLENDER":
                     print("File is not a valid .blend file.")
                     file.close()
                     return False
 
                 file.read(1)  # pointer size byte, no use for it atm
+
                 _endianness = file.read(1).decode()
-                _version = list(map(int, file.read(3).decode()))
-                file.read(24)  # 24 bytes I don't care about
                 if _endianness == "v":
                     _endianness = "little"
                 elif _endianness == "V":
                     _endianness = "big"
+
+                _version = list(map(int, file.read(3).decode()))
+
+                file.read(24)  # 24 bytes I don't care about
+
                 _startframe = int.from_bytes(file.read(4), _endianness)
                 _endframe = int.from_bytes(file.read(4), _endianness)
 
                 _new_file = BlendFile(filepath, _version,
                                       _startframe, _endframe)
-
-                file.close()
         except:
             print("Error opening file")
             return False
+        finally:
+            file.close()
 
         _new_job = RenderJob(_blender_path, _new_file, render_settings)
         self.__job_list.append(_new_job)
@@ -328,6 +335,7 @@ class JobList:
 
     @classmethod
     def print(self):
+        # TODO: replace with tabulate
         # header
         print("{:2}. {:13}  {:65}\t{:120}\t{:12}".format(
             "\033[1m" "ID", "App/Version", "Blend File Path", "Render Settings", "Status" "\033[0m"))

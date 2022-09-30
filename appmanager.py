@@ -18,7 +18,7 @@ class AppData:
     version: List[int] = field(default_factory=list)
 
     def __repr__(self) -> str:
-        return "AppData(name='{}', version='{}', path='{}')".format(self.name, self.version, self.path)
+        return f"AppData(name='{self.name}', version='{self.version}', path='{self.path}')"
 
     def __eq__(self, other) -> bool:
         if isinstance(other, AppData):
@@ -64,7 +64,7 @@ class AppData:
         _version_str = ""
         for element in self.version:
             _version_str += str(element) + "."
-        return (self.name + " " + _version_str[:-1])
+        return f"{self.name}  {_version_str[:-1]}"
 
 
 class AppList:
@@ -140,6 +140,7 @@ class AppList:
 
     @classmethod
     def print(self):
+        # TODO: replace with tabulate
         # header
         print("{}{} {}  {}\t{}{}".format(
             "\033[1m", " ", "ID", "Appname/Version", "Path", "\033[0m"))
