@@ -130,6 +130,10 @@ class AppList:
         return self.__active_installation
 
     @classmethod
+    def get_active_installation_index(self) -> int:
+        return self.__app_list.index(self.__active_installation)
+
+    @classmethod
     def set_active_installation(self, new_app: AppData):
         if new_app is not self.__active_installation:
             self.__active_installation = new_app
@@ -154,3 +158,15 @@ class AppList:
                 _active_indicator = ">"
             print("{} {}.  {}\t{}".format(
                 _active_indicator, index, app, app.path))
+
+
+@dataclass
+class AppSettings:
+    shutdown_on_completion: bool
+    global_output_path: str
+    global_threads_count: int
+    window_position: tuple = (200, 200)
+    window_size: tuple = (1280, 960)
+
+    def __repr__(self) -> str:
+        return f"AppSettings(shutdown_on_completion={self.shutdown_on_completion}, global_output={self.global_output_path}, global_threads={self.global_threads_count})"
