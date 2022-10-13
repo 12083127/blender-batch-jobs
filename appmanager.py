@@ -83,9 +83,7 @@ class AppList:
             if _name != "Blender":
                 return False
 
-            _version: list[int] = []
-            for element in _version_str.split("."):
-                _version.append(int(element))
+            _version: list[int] = [int(element) for element in _version_str.split(".")]
 
             # check for duplicates
             _new_app = AppData(
@@ -115,11 +113,29 @@ class AppList:
     @classmethod
     def remove_installation(self, index: int) -> bool:
         try:
+            _active_installation_index = self.get_active_installation_index()
             self.__app_list.pop(abs(index))
+            # check if we removed the active selected app
+            # if so, update the reference
+            if _active_installation_index == index:
+                self.set_active_installation(None)
+                if self.is_populated():
+                    self.set_active_installation(self.__app_list[0])
+
             return True
         except:
             print("Error removing app installation...")
             return False
+
+    @classmethod
+    def is_populated(self) -> bool:
+        if len(self.__app_list) == 0:
+            return False
+        return True
+
+    @classmethod
+    def get_choice_list(self) -> list[str]:
+        return [app.__str__() for app in self.__app_list]
 
     @classmethod
     def get(self) -> List[AppData]:
@@ -169,4 +185,12 @@ class AppSettings:
     window_size: tuple = (1280, 960)
 
     def __repr__(self) -> str:
-        return f"AppSettings(shutdown_on_completion={self.shutdown_on_completion}, global_output={self.global_output_path}, global_threads={self.global_threads_count})"
+        return (f"AppSettings(shutdown_on_completion={self.shutdown_on_completion},"
+                f"global_output={self.global_output_path},"
+                f"global_threads={self.global_threads_count})")
+
+    def save():
+        pass
+
+    def load():
+        pass

@@ -1,4 +1,5 @@
 
+import os
 import re
 import subprocess
 import time
@@ -16,6 +17,12 @@ class JobStatus(Enum):
     SUSPENDED = "Suspended"
     SUCCESSFUL = "Successful"
     ERROR = "Error"
+
+    def get_status_list():
+        _list = ""
+        for element in JobStatus:
+            _list += str(element.value) + ","
+        return _list[:-1]
 
 
 @unique
@@ -53,12 +60,17 @@ class RenderEngine(Enum):
 @dataclass
 class BlendFile:
     path: str
+    name: str
     version: List[int]
     startframe: int
     endframe: int
 
     def __repr__(self) -> str:
-        return f"BlendFile(path='{self.path}', version='{self.version}', startframe='{self.startframe}', endframe='{self.endframe}')"
+        return (f"BlendFile(path='{self.path}', "
+                f"name='{self.name}', "
+                f"version='{self.version}', "
+                f"startframe='{self.startframe}', "
+                f"endframe='{self.endframe}')")
 
     def __eq__(self, other) -> bool:
         if isinstance(other, AppData | BlendFile):
@@ -100,10 +112,10 @@ class BlendFile:
         _version_str = ""
         for element in self.version:
             _version_str += str(element) + "."
-        return f"{self.path} - ver.{_version_str[:-1]}"
+        return f"{self.name} - ver.{_version_str[:-1]}"
 
 
-@dataclass
+@ dataclass
 class RenderSettings:
     frames: str = ""
     startframe: int = -1
@@ -115,7 +127,14 @@ class RenderSettings:
     threads: int = 0
 
     def __repr__(self) -> str:
-        return f"RenderSettings(frames='{self.frames}', startframe='{self.startframe}', endframe='{self.endframe}', framejump='{self.framejump}', output='{self.output}', engine='{self.engine}', format='{self.format}', threads='{self.threads}')"
+        return (f"RenderSettings(frames='{self.frames}', "
+                f"startframe='{self.startframe}', "
+                f"endframe='{self.endframe}', "
+                f"framejump='{self.framejump}', "
+                f"output='{self.output}', "
+                f"engine='{self.engine}', "
+                f"format='{self.format}', "
+                f"threads='{self.threads}')")
 
     def __str__(self) -> str:
         _str = ""
@@ -149,7 +168,7 @@ class RenderSettings:
         return _str
 
 
-@dataclass
+@ dataclass
 class RenderJob:
     app: AppData
     blendfile: BlendFile
@@ -160,7 +179,11 @@ class RenderJob:
     __frames_to_render: int = field(init=False, default_factory=int)
 
     def __repr__(self) -> str:
-        return f"RenderJob(app='{self.app}', blendfile='{self.blendfile}', render_settings='{self.render_settings}', progress='{self.progress}', status='{self.status}')"
+        return (f"RenderJob(app='{self.app}', "
+                f"blendfile='{self.blendfile}', "
+                f"render_settings='{self.render_settings}', "
+                f"progress='{self.progress}', "
+                f"status='{self.status}')")
 
     def __order_frame_range(self, input: str, separator: str) -> str:
         _range = input.split(separator)
@@ -228,8 +251,7 @@ class RenderJob:
 
         if self.render_settings.frames == "":
             _cmd_str.append("-a")
-            self.__frames_to_render += self.blendfile.endframe - \
-                (self.blendfile.startframe - 1)
+            self.__frames_to_render += self.blendfile.endframe - (self.blendfile.startframe - 1)
         else:
             # input validation
             _frames = self.render_settings.frames.replace(" ", "")
@@ -276,15 +298,15 @@ class RenderJob:
 class JobList:
     __job_list: List[RenderJob] = []
 
-    @classmethod
-    def add_render_job(self, filepath: str, render_settings: RenderSettings = RenderSettings()) -> bool:
+    @ classmethod
+    def add_render_job(self, filepath: str, render_settings: RenderSettings = RenderSettings()) -> RenderJob:
         # TODO:
         # -check for changed app location
         # -exception checking
         _blender_path = AppList.get_active_installation()
         if not _blender_path:
             print("No active installation. Please add at least one valid Blender install")
-            return False
+            return None
         # try opening the blend file
         try:
             with open(filepath, "rb") as file:
@@ -292,7 +314,9 @@ class JobList:
                 if _identifer != "BLENDER":
                     print("File is not a valid .blend file.")
                     file.close()
-                    return False
+                    return None
+
+                _filename = filepath.rsplit(os.sep, 1)[-1]
 
                 file.read(1)  # pointer size byte, no use for it atm
 
@@ -309,20 +333,20 @@ class JobList:
                 _startframe = int.from_bytes(file.read(4), _endianness)
                 _endframe = int.from_bytes(file.read(4), _endianness)
 
-                _new_file = BlendFile(filepath, _version,
+                _new_file = BlendFile(filepath, _filename, _version,
                                       _startframe, _endframe)
         except:
             print("Error opening file")
-            return False
+            return None
         finally:
             file.close()
 
         _new_job = RenderJob(_blender_path, _new_file, render_settings)
         self.__job_list.append(_new_job)
 
-        return True
+        return _new_job
 
-    @classmethod
+    @ classmethod
     def remove_render_job(self, index: int) -> bool:
         try:
             self.__job_list.pop(abs(index))
@@ -331,11 +355,17 @@ class JobList:
             print("Error removing render job...")
             return False
 
-    @classmethod
+    @ classmethod
+    def is_populated(self) -> bool:
+        if len(self.__job_list) == 0:
+            return False
+        return True
+
+    @ classmethod
     def get(self) -> List[RenderJob]:
         return self.__job_list
 
-    @classmethod
+    @ classmethod
     def render(self):
         for job in self.__job_list:
 
@@ -377,7 +407,7 @@ class JobList:
             else:
                 job.status = JobStatus.ERROR
 
-    @classmethod
+    @ classmethod
     def print(self):
         # TODO: replace with tabulate
         # header
